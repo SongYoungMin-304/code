@@ -23,53 +23,19 @@ public class DesignTwitter {
     }
 
     public void postTweet(int userId, int tweetId) {
-        tweets.computeIfAbsent(userId, v -> new ArrayList<>())
-              .add(new int[]{timestamp++, tweetId});
+        return;
     }
 
     public List<Integer> getNewsFeed(int userId) {
-        // 최신순 정렬 (time 내림차순)
-        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> b[0] - a[0]);
-
-        // 내 트윗 + 팔로우한 사람들 트윗을 모두 힙에 넣기
-        Set<Integer> targets = new HashSet<>();
-        targets.add(userId);
-        if (follows.containsKey(userId)) targets.addAll(follows.get(userId));
-
-        for (int uid : targets) {
-            if (tweets.containsKey(uid)) {
-                List<int[]> list = tweets.get(uid);
-                // 각 유저의 가장 최신 트윗 인덱스를 힙에 넣기
-                int idx = list.size() - 1;
-                pq.offer(new int[]{list.get(idx)[0], list.get(idx)[1], uid, idx});
-            }
-        }
-
-        List<Integer> result = new ArrayList<>();
-        while (!pq.isEmpty() && result.size() < 10) {
-            int[] top = pq.poll();
-            result.add(top[1]); // tweetId
-
-            // 같은 유저의 다음 트윗이 있으면 힙에 추가
-            int nextIdx = top[3] - 1;
-            if (nextIdx >= 0) {
-                int uid = top[2];
-                List<int[]> list = tweets.get(uid);
-                pq.offer(new int[]{list.get(nextIdx)[0], list.get(nextIdx)[1], uid, nextIdx});
-            }
-        }
-
-        return result;
+        return null;
     }
 
     public void follow(int followerId, int followeeId) {
-        follows.computeIfAbsent(followerId, v -> new HashSet<>()).add(followeeId);
+        return;
     }
 
     public void unfollow(int followerId, int followeeId) {
-        if (follows.containsKey(followerId)) {
-            follows.get(followerId).remove(followeeId);
-        }
+        return;
     }
 
     public static void main(String[] args) {
