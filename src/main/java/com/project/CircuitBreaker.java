@@ -8,102 +8,83 @@ package com.project;
 // - OPEN     : 차단. 요청 즉시 실패 반환. 일정 시간 후 HALF_OPEN으로 전환.
 // - HALF_OPEN: 탐색. 요청 1개 통과시켜 성공하면 CLOSED, 실패하면 다시 OPEN.
 
-import java.util.function.Supplier;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class CircuitBreaker {
 
-    public enum State { CLOSED, OPEN, HALF_OPEN }
+    enum State {CLOSED, HALF_OPEN, OPEN}
 
     private State state = State.CLOSED;
-    private int failureCount = 0;
 
-    private final int failureThreshold;  // 몇 번 실패하면 OPEN
-    private final long retryTimeoutMs;   // OPEN 상태 유지 시간 (ms)
-    private long openedAt;               // OPEN 된 시각
+    private Queue<Boolean> queue = new LinkedList();
 
-    public CircuitBreaker(int failureThreshold, long retryTimeoutMs) {
-        this.failureThreshold = failureThreshold;
-        this.retryTimeoutMs = retryTimeoutMs;
-    }
+    private LocalDateTime openTime;
 
-    public <T> T call(Supplier<T> action) {
-        switch (state) {
-            case OPEN:
-                if (System.currentTimeMillis() - openedAt >= retryTimeoutMs) {
-                    state = State.HALF_OPEN; // 시간이 지나면 HALF_OPEN으로 전환
-                } else {
-                    throw new RuntimeException("[OPEN] 서킷 차단 중 — 요청 거부");
+    public void execute(boolean isSuccess){
+
+        System.out.println("상태 :" + state);
+
+        switch(state){
+            case CLOSED: {
+                addQueue(isSuccess);
+                openCheck();
+                break;
+            }
+
+            case OPEN: {
+                if (Duration.between(openTime, LocalDateTime.now()).getSeconds() >= 10) {
+                    state = State.HALF_OPEN;
                 }
-                // HALF_OPEN으로 넘어가서 아래 실행
-            case HALF_OPEN:
-            case CLOSED:
-                try {
-                    T result = action.get();
-                    onSuccess();
-                    return result;
-                } catch (Exception e) {
-                    onFailure();
-                    throw e;
+                break;
+            }
+
+            case HALF_OPEN: {
+                if(isSuccess){
+                    state = State.CLOSED;
+                }else{
+                    state = State.OPEN;
                 }
-            default:
-                throw new IllegalStateException("알 수 없는 상태");
-        }
-    }
-
-    private void onSuccess() {
-        failureCount = 0;
-        state = State.CLOSED;
-        System.out.println("[SUCCESS] 상태: " + state);
-    }
-
-    private void onFailure() {
-        failureCount++;
-        System.out.println("[FAILURE] 실패 횟수: " + failureCount);
-
-        if (state == State.HALF_OPEN || failureCount >= failureThreshold) {
-            state = State.OPEN;
-            openedAt = System.currentTimeMillis();
-            System.out.println("[OPEN] 서킷 열림 — " + retryTimeoutMs + "ms 동안 차단");
-        }
-    }
-
-    public State getState() { return state; }
-
-    public static void main(String[] args) throws InterruptedException {
-        // 실패 2번이면 OPEN, 1초 후 HALF_OPEN
-        CircuitBreaker cb = new CircuitBreaker(2, 1000);
-
-        Supplier<String> unstableService = () -> {
-            if (Math.random() < 0.7) throw new RuntimeException("서비스 오류");
-            return "응답 성공";
-        };
-
-        // 1. CLOSED → 실패 누적 → OPEN
-        System.out.println("=== 요청 시작 ===");
-        for (int i = 0; i < 5; i++) {
-            try {
-                String result = cb.call(() -> "항상 실패" + (1/0)); // 강제 실패
-            } catch (Exception e) {
-                System.out.println("예외: " + e.getMessage() + " | 상태: " + cb.getState());
+                break;
             }
         }
+    }
 
-        // 2. OPEN 상태에서 즉시 차단
-        System.out.println("\n=== OPEN 상태에서 요청 ===");
-        try {
-            cb.call(() -> "차단되어야 함");
-        } catch (Exception e) {
-            System.out.println("예외: " + e.getMessage());
+    private void addQueue(boolean isSuccess) {
+        if(queue.size() >= 10){
+            queue.poll();
         }
+        queue.add(isSuccess);
+    }
 
-        // 3. 1초 대기 후 HALF_OPEN → 성공하면 CLOSED
-        System.out.println("\n=== 1초 대기 후 HALF_OPEN ===");
-        Thread.sleep(1100);
-        try {
-            String result = cb.call(() -> "복구 성공!");
-            System.out.println("결과: " + result + " | 상태: " + cb.getState());
-        } catch (Exception e) {
-            System.out.println("예외: " + e.getMessage() + " | 상태: " + cb.getState());
+    public void openCheck(){
+
+        if(queue.size() >= 5) {
+            int failCnt = 0;
+            for (boolean isSuccess : queue) {
+                if (!isSuccess) failCnt++;
+            }
+
+            double failRate = failCnt / queue.size();
+
+            if (failRate > 0.5) state = State.HALF_OPEN;
+
+            openTime = LocalDateTime.now();
         }
+    }
+
+
+    public static void main(String[] args) throws InterruptedException {
+
+        CircuitBreaker circuitBreaker = new CircuitBreaker();
+
+        circuitBreaker.execute(false);
+        circuitBreaker.execute(false);
+        circuitBreaker.execute(true);
+        circuitBreaker.execute(false);
+        circuitBreaker.execute(true);
+
     }
 }
