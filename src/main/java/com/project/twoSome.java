@@ -7,36 +7,35 @@ public class twoSome {
 
     public int[] twoSum(int[] nums, int target) {
 
-        int sum = 0;
+        for(int i =0; i < nums.length; i++){
+            for(int j = i; j < nums.length; j++){
+                int sum = nums[i] + nums[j];
 
-        for(int i = 0; i < nums.length; i++){
-            for(int j = i + 1; j < nums.length; j++){
-                sum = nums[i] + nums[j];
-
-                if(sum == target){
-                    return new int[]{i,j};
-                }
+                if(sum == target) return new int[]{i,j};
             }
         }
 
-        return new int[]{};
+        throw new RuntimeException();
+
     }
 
     public int[] twoSumV2(int[] nums, int target) {
 
         Map<Integer, Integer> map = new HashMap<>();
 
-        for(int a = 0; a < nums.length; a ++){
+        for(int i = 0; i < nums.length; i++){
 
-            int completion = target - nums[a];
+            int completion = target - nums[i];
 
             if(map.containsKey(completion)){
-                return new int[]{map.get(completion), a};
+                return new int[]{map.get(completion),i};
+            }else{
+                map.put(nums[i],i);
             }
-            map.put(nums[a],a);
+
         }
 
-        throw new IllegalArgumentException("no solution");
+        throw new RuntimeException();
     }
 
     public static void main(String[] args) {
@@ -45,7 +44,7 @@ public class twoSome {
 
         twoSome t = new twoSome();
 
-        int[] ints = t.twoSum(k, 9);
+        int[] ints = t.twoSumV2(k, 9);
 
         for(int a : ints){
             System.out.println(a);

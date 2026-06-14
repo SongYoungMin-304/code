@@ -9,30 +9,58 @@ import java.util.*;
 
 public class TopKFrequentElements {
 
-    // O(n) — bucket sort 방식
+
+    // 1,1,1,2,2,3
+    // 1 -> 3
+    // 2 -> 2
+    // 3 -> 1
     public int[] topKFrequent(int[] nums, int k) {
-        // 1. 각 숫자가 몇 번 나왔는지 센다
-        Map<Integer, Integer> count = new HashMap<>();
+
+        Map<Integer, Integer> map = new HashMap<>();
+
         for (int num : nums) {
-            count.put(num, count.getOrDefault(num, 0) + 1);
+            map.put(num, map.getOrDefault(num, 0) + 1);
         }
 
-        // 2. 빈도수를 index로 하는 버킷 생성 (최대 빈도수 = nums.length)
-        List<Integer>[] bucket = new List[nums.length + 1];
-        for (int num : count.keySet()) {
-            int freq = count.get(num);
-            if (bucket[freq] == null) bucket[freq] = new ArrayList<>();
-            bucket[freq].add(num);
+        return map
+                .entrySet()
+                .stream()
+                .sorted((a,b) -> b.getValue() - a.getValue())
+                .limit(k)
+                .mapToInt(e -> e.getKey())
+                .toArray();
+    }
+
+    // O(n) — bucket sort 방식
+    // nums 전부, map에다가 저장 1 -> 2개 이런식으로
+    // 갯수별로 배열을 만들어서 3개 -> 1, 2 / 2개 -> 3 이런식으로 세팅을 해서, 위에꺼 빼서 넣기
+    public int[] topKFrequentV2(int[] nums, int k) {
+
+        Map<Integer, Integer> map = new HashMap<Integer, Integer>();
+
+        for(int num : nums){
+            map.put(num, map.getOrDefault(num, 0) + 1);
         }
 
-        // 3. 빈도수 높은 버킷부터 k개 수집
+        List<Integer>[] list = new List[nums.length + 1];
+
+        for(int key : map.keySet()){
+
+            if(list[map.get(key)] == null){
+                list[map.get(key)] = new ArrayList<>();
+            }
+
+            list[map.get(key)].add(key);
+        }
+
         int[] result = new int[k];
         int idx = 0;
-        for (int freq = bucket.length - 1; freq >= 1 && idx < k; freq--) {
-            if (bucket[freq] != null) {
-                for (int num : bucket[freq]) {
-                    result[idx++] = num;
-                    if (idx == k) break;
+
+        for(int i = list.length - 1; i > 0 && idx < k; i--){
+            if(list[i] != null){
+                for(int j = 0; j < list[i].size(); j++){
+                    result[idx++] = list[i].get(j);
+                    if(idx == k) break;
                 }
             }
         }
@@ -43,8 +71,8 @@ public class TopKFrequentElements {
     public static void main(String[] args) {
         TopKFrequentElements sol = new TopKFrequentElements();
 
-        System.out.println(Arrays.toString(sol.topKFrequent(new int[]{1, 1, 1, 2, 2, 3}, 2))); // [1, 2]
-        System.out.println(Arrays.toString(sol.topKFrequent(new int[]{1}, 1)));                 // [1]
-        System.out.println(Arrays.toString(sol.topKFrequent(new int[]{1,2,1,2,1,2,3,1,3,2}, 2))); // [1, 2]
+        System.out.println(Arrays.toString(sol.topKFrequentV2(new int[]{1, 1, 1, 2, 2, 3}, 2))); // [1, 2]
+        System.out.println(Arrays.toString(sol.topKFrequentV2(new int[]{1}, 1)));                 // [1]
+        System.out.println(Arrays.toString(sol.topKFrequentV2(new int[]{1,2,1,2,1,2,3,1,3,2}, 2))); // [1, 2]
     }
 }
