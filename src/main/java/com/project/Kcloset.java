@@ -34,14 +34,13 @@ public class Kcloset {
 
     public static int[][] kClosest(int[][] points, int k) {
 
-        // TODO
-        PriorityQueue<int []> priorityQueue = new PriorityQueue<>((a, b) -> distance(a) - distance(b));
+        PriorityQueue<int []> priorityQueue = new PriorityQueue<>((a,b) -> distance(a) - distance(b));
 
-        int [][] result =new int[k][2];
-
-        for(int [] data : points){
-            priorityQueue.add(data);
+        for(int []point : points){
+            priorityQueue.add(point);
         }
+
+        int [][] result = new int[k][2];
 
         for(int i = 0; i < k; i++){
             int[] poll = priorityQueue.poll();
@@ -49,13 +48,13 @@ public class Kcloset {
             result[i] = poll;
         }
 
+
         return result;
     }
 
-    public static int distance(int[] data){
+    public static int distance(int []data){
         return data[0] * data[0] + data[1] * data[1];
     }
-
 
     private static void printResult(int[][] result) {
         for (int[] point : result) {
